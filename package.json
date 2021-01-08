@@ -1,5 +1,5 @@
 {
-  "name": "cc-crawler",
+  "name": "bb-crawler",
   "version": "1.0.0",
   "main": "./crawler.js",
   "dependencies": {
@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bqxu/cc-crawler.git"
+    "url": "https://github.com/bqxu/bb-crawler.git"
   },
   "keywords": [
     "crawler",
@@ -36,7 +36,7 @@
   "author": "bqxu",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/bqxu/cc-crawler/issues"
+    "url": "https://github.com/bqxu/bb-crawler/issues"
   },
-  "homepage": "https://github.com/bqxu/cc-crawler"
+  "homepage": "https://github.com/bqxu/bb-crawler"
 }
