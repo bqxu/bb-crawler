@@ -16,7 +16,7 @@ You can install using [npm](https://www.npmjs.com/package/bb-crawler).
 npm install bb-crawler
 ```
 
-## [example](https://github.com/bqxu/bb-crawler/tree/master/examples).
+## [example](https://github.com/bqxu/bb-crawler/tree/main/example).
 
 ## license
 
