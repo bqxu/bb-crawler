@@ -340,19 +340,20 @@ class Context {
     async release() {
         const {release} = this.config;
         if (this.mysql) {
-            this.mysql.end(() => {
-                console.log(`mysql end`)
+            this.mysql.end(() => {            
+                this.logger.debug(`mysql end`, {tag: "release"})
             })
         }
 
         if (this.redis) {
             this.redis.quit(() => {
-                console.log(`redis quit`)
+                this.logger.debug(`redis quit`, {tag: "release"})
             })
         }
 
         if (release) {
             await release(this)
+            this.logger.debug(`release()`, {tag: "release"})
         }
     }
 }
