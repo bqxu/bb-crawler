@@ -394,7 +394,7 @@ class Context {
     async cache_url(url) {
         const {cache_url} = this.config;
         if(cache_url){
-            return await cache_url(url)
+            return await cache_url(this,url)
         }
         return this.utils.url_dir(url);
     }
@@ -409,7 +409,7 @@ class Context {
     async request_url(url){
         const {request_url} = this.config;
         if(request_url){
-            return await request_url(url);
+            return await request_url(this,url);
         }
         return url;
     }
