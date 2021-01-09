@@ -318,7 +318,7 @@ class Context {
     async requestCache(ctx , url){
         const {requestCache} = ctx.config
         if (requestCache) {
-            return await this.requestCache(ctx,url);
+            return await requestCache(ctx,url);
         }
         let cacheUrl = await ctx.cache_url(url);;
         return {
