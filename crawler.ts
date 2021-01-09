@@ -321,8 +321,9 @@ class Context {
         let res = null;
         if (format) {
             res = await format(this,url)
+        }else{
+            res = this.res.data;
         }
-        res = this.res.data;
         profiler.done({service: this.config.logger.service, tag: url, level: 'debug', message: 'format timer'});
         return res;
     }
