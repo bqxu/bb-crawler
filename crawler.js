@@ -275,6 +275,10 @@ class Context {
         }
     }
     async cache_url(url) {
+        const { cache_url } = this.config;
+        if (cache_url) {
+            return await cache_url(url);
+        }
         return this.utils.url_dir(url);
     }
     async beforeRequest(url) {
@@ -282,6 +286,13 @@ class Context {
         if (beforeRequest) {
             await beforeRequest(this, url);
         }
+    }
+    async request_url(url) {
+        const { request_url } = this.config;
+        if (request_url) {
+            return await request_url(url);
+        }
+        return url;
     }
     async request(url) {
         const profiler = this.logger.startTimer();
@@ -299,10 +310,10 @@ class Context {
         else {
             const profiler = this.logger.startTimer();
             try {
-                res = this.network.get(url);
+                res = this.network.get(this.request_url(url));
             }
             catch (e) {
-                this.logger.error(util.format(`url:%s error: %s`, url, e.message), { tag: "axios" });
+                this.logger.error(util.format(`url:%s error: %s`, this.request_url(url), e.message), { tag: "axios" });
                 throw e;
             }
             finally {
