@@ -261,14 +261,16 @@ class Context {
         const { release } = this.config;
         if (this.mysql) {
             this.mysql.end(() => {
+                console.log(`mysql end`);
             });
         }
         if (this.redis) {
             this.redis.quit(() => {
+                console.log(`redis quit`);
             });
         }
         if (release) {
-            return await release(this);
+            await release(this);
         }
     }
 }
@@ -328,34 +330,49 @@ class Crawler {
     async newContext() {
         const ctx = new Context(_.assign({}, this.config));
         ctx.logger = this.logger;
-        await ctx.init();
+        try {
+            await ctx.init();
+        }
+        catch (e) {
+            await ctx.release();
+            return null;
+        }
         return ctx;
     }
     async task(url) {
         this.logger.info(util.format(`url:%s`, url), { tag: 'task' });
         let ctx = await this.newContext();
-        await ctx.beforeRequest(url);
-        if (ctx.cache) {
-            let cacheUrl = await ctx.cache_url(url);
-            this.logger.debug(util.format(`cacheUrl:%s `, cacheUrl), { tag: url });
-            if (await ctx.cache.hasCache(cacheUrl)) {
-                this.logger.debug(util.format(`hasCache`), { tag: url });
-                ctx.res = {
-                    data: await ctx.cache.get(cacheUrl)
-                };
+        if (!ctx) {
+            throw new Error(`can't newContext`);
+        }
+        try {
+            await ctx.beforeRequest(url);
+            if (ctx.cache) {
+                let cacheUrl = await ctx.cache_url(url);
+                this.logger.debug(util.format(`cacheUrl:%s `, cacheUrl), { tag: url });
+                if (await ctx.cache.hasCache(cacheUrl)) {
+                    this.logger.debug(util.format(`hasCache`), { tag: url });
+                    ctx.res = {
+                        data: await ctx.cache.get(cacheUrl)
+                    };
+                }
+                else {
+                    ctx.res = await ctx.request(url);
+                    // console.log(ctx.res);
+                    await ctx.cache.set(cacheUrl, ctx.res.data);
+                }
             }
             else {
                 ctx.res = await ctx.request(url);
-                // console.log(ctx.res);
-                await ctx.cache.set(cacheUrl, ctx.res.data);
             }
+            ctx.data = await ctx.format(url);
+            await ctx.store(url);
+            await ctx.release();
         }
-        else {
-            ctx.res = await ctx.request(url);
+        catch (e) {
+            this.logger.error(util.format(`url:%s error: %s`, url, e.message), { tag: "task" });
+            await ctx.release();
         }
-        ctx.data = await ctx.format(url);
-        await ctx.store(url);
-        await ctx.release();
     }
     async tasks() {
         // config =
@@ -368,7 +385,7 @@ class Crawler {
                     await this.task(url);
                 }
                 catch (e) {
-                    this.logger.error(util.format(`url:%s error:%s`, url, e.message), { tag: "tasks" });
+                    this.logger.error(util.format(`url:%s error %s`, url, e.message), { tag: 'tasks' });
                     if (!allowError) {
                         throw e;
                     }
