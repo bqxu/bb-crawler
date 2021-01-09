@@ -230,7 +230,7 @@ class Context {
     logger: winston.Logger;
 
     done:boolean;
-    
+
     constructor(config) {
         this.config = config;
         // this.init();
@@ -482,6 +482,7 @@ export class Crawler {
         try{
             await ctx.beforeRequest(url);
             if(ctx.done){
+                this.logger.info(util.format(`url:%s `, url), {tag: "done"})
                 await ctx.release();
                 return  
             }

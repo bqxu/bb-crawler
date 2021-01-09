@@ -375,6 +375,7 @@ class Crawler {
         try {
             await ctx.beforeRequest(url);
             if (ctx.done) {
+                this.logger.info(util.format(`url:%s `, url), { tag: "done" });
                 await ctx.release();
                 return;
             }
