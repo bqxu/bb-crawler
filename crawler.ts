@@ -15,6 +15,7 @@ import * as mkdirp from 'mkdirp'
 import * as winston from 'winston'
 import * as _ from 'lodash'
 import * as util from 'util'
+import * as Urllib from 'urllib';
 
 class Config {
     urls?: string[];
@@ -35,6 +36,8 @@ class Config {
     format?: Function;
     store?: Function;
     release?: Function;
+    urllib?: any;;
+    network?: any;;
 }
 
 interface Cache {
@@ -213,6 +216,89 @@ export class Utils {
     }
 }
 
+interface Network {
+ 
+    get(url, params?:any,config?:any);
+
+    getJSON(url, params?:any,config?:any);
+
+    postJSON(url, data?:any,config?:any);
+
+    postJSON_rText(url, data?:any,config?:any)
+
+    
+}
+
+
+class NetworkAxios implements Network {
+
+    axios: Axios.AxiosInstance;
+
+    constructor(config = {}) {
+        this.axios = Axios.default.create(config)
+    }
+
+    get(url, params?:any,config?:any) {
+        return this.axios.get(url, Object.assign({},{params, responseType: 'text'},config))
+    }
+
+    getJSON(url, params?:any,config?:any)  {
+        return this.axios.get(url, Object.assign({},{params},config))
+    }
+
+    postJSON(url, data?:any,config?:any) {
+        return this.axios.get(url, Object.assign({},{data, method: 'post'},config))
+    }
+
+    postJSON_rText(url, data?:any,config?:any) {
+        return this.axios.get(url, Object.assign({},{data, method: 'post', responseType: 'text'},config))
+    }
+}
+
+class NetworkUrlLib implements Network {
+
+    
+    config: any;
+
+    constructor(config = {}) {
+       const config_:any =  this.config = Object.assign({},config);    
+        this.make_proxy(this.config)
+    }
+
+    make_proxy(config?:any){
+        if(config && config.proxy){
+            if(config.proxy.host){
+                let proxy_str = `${config.proxy.protocol}://${config.proxy.host}:${config.proxy.port}`;
+                if(config.proxy.auth){
+                    proxy_str = `${config.proxy.protocol}://${config.proxy.auth.username}:${config.proxy.auth.password}@${config.proxy.host}:${config.proxy.port}`;
+                }
+                config.proxy= proxy_str;    
+            }                
+        }
+    }
+
+    get(url, params?:any,config?:any) {
+        this.make_proxy(config)
+        return Urllib.request(url,Object.assign({ method: 'GET',data:params, dataType: 'text'},this.config,config))
+    }
+
+    getJSON(url, params?:any,config?:any){
+        this.make_proxy(config)
+        return Urllib.request(url,Object.assign({ method: 'GET',data:params, dataType: 'json'},this.config,config))
+    }
+
+    postJSON(url, data?:any,config?:any){
+        this.make_proxy(config)
+        return Urllib.request(url, Object.assign({method: 'POST',data, dataType: 'json'},this.config,config))
+    }
+
+    postJSON_rText(url, data?:any,config?:any){
+        this.make_proxy(config)
+        return Urllib.request(url,Object.assign({ method: 'POST',data, dataType: 'text'},this.config,config))
+    }
+}
+
+
 
 class Context {
     config: Config;
@@ -223,6 +309,8 @@ class Context {
     cos: Cos;
     jquery: any;
     axios: any;
+    urllib: any;
+    network: any;
     res: any;
     data: any;
     utils: Utils;
@@ -237,7 +325,7 @@ class Context {
     }
 
     async init() {
-        const {mysql, redis, oss, cos, axios, env, cache} = this.config;
+        const {mysql, redis, oss, cos, axios, env, cache,urllib,network} = this.config;
 
         this.jquery = cheerio;
         this.utils = new Utils();
@@ -266,10 +354,18 @@ class Context {
             this.cos = new Cos(cos)
         }
 
-        if (axios) {
+        if(axios){
+            this.axios =  Axios.default.create(axios);
+        }else {
             this.axios = Axios.default.create(axios);
-        } else {
-            this.axios = Axios.default.create();
+        }
+
+        this.urllib = Urllib;
+
+        if (network && network.type ==='axios') {
+            this.network = new NetworkAxios(axios);        
+        } else  {
+            this.network = new NetworkUrlLib(urllib);
         }
 
         if (cache) {
@@ -318,7 +414,7 @@ class Context {
         } else {
             const profiler = this.logger.startTimer();
             try{
-                res = this.axios.get(url)
+                res = this.network.get(url)
             }catch(e){
                 this.logger.error(util.format(`url:%s error: %s`, url, e.message), {tag: "axios"})
                 throw e;
@@ -466,6 +562,7 @@ export class Crawler {
         try{
             await ctx.init();
         } catch(e){
+            ctx.logger.error(e.message);
             await ctx.release()
             return null;
         }    

@@ -17,7 +17,10 @@ const mkdirp = require("mkdirp");
 const winston = require("winston");
 const _ = require("lodash");
 const util = require("util");
+const Urllib = require("urllib");
 class Config {
+    ;
+    ;
 }
 class CacheOSS {
     constructor(ctx) {
@@ -157,13 +160,63 @@ class Utils {
     }
 }
 exports.Utils = Utils;
+class NetworkAxios {
+    constructor(config = {}) {
+        this.axios = Axios.default.create(config);
+    }
+    get(url, params, config) {
+        return this.axios.get(url, Object.assign({}, { params, responseType: 'text' }, config));
+    }
+    getJSON(url, params, config) {
+        return this.axios.get(url, Object.assign({}, { params }, config));
+    }
+    postJSON(url, data, config) {
+        return this.axios.get(url, Object.assign({}, { data, method: 'post' }, config));
+    }
+    postJSON_rText(url, data, config) {
+        return this.axios.get(url, Object.assign({}, { data, method: 'post', responseType: 'text' }, config));
+    }
+}
+class NetworkUrlLib {
+    constructor(config = {}) {
+        const config_ = this.config = Object.assign({}, config);
+        this.make_proxy(this.config);
+    }
+    make_proxy(config) {
+        if (config && config.proxy) {
+            if (config.proxy.host) {
+                let proxy_str = `${config.proxy.protocol}://${config.proxy.host}:${config.proxy.port}`;
+                if (config.proxy.auth) {
+                    proxy_str = `${config.proxy.protocol}://${config.proxy.auth.username}:${config.proxy.auth.password}@${config.proxy.host}:${config.proxy.port}`;
+                }
+                config.proxy = proxy_str;
+            }
+        }
+    }
+    get(url, params, config) {
+        this.make_proxy(config);
+        return Urllib.request(url, Object.assign({ method: 'GET', data: params, dataType: 'text' }, this.config, config));
+    }
+    getJSON(url, params, config) {
+        this.make_proxy(config);
+        return Urllib.request(url, Object.assign({ method: 'GET', data: params, dataType: 'json' }, this.config, config));
+    }
+    postJSON(url, data, config) {
+        this.make_proxy(config);
+        return Urllib.request(url, Object.assign({ method: 'POST', data, dataType: 'json' }, this.config, config));
+    }
+    postJSON_rText(url, data, config) {
+        this.make_proxy(config);
+        return Urllib.request(url, Object.assign({ method: 'POST', data, dataType: 'text' }, this.config, config));
+    }
+}
 class Context {
     constructor(config) {
         this.config = config;
         // this.init();
     }
     async init() {
-        const { mysql, redis, oss, cos, axios, env, cache } = this.config;
+        const { mysql, redis, oss, cos, axios, env, cache, urllib, network } = this.config;
         this.jquery = cheerio;
         this.utils = new Utils();
         if (mysql instanceof Rds) {
@@ -194,7 +247,14 @@ class Context {
             this.axios = Axios.default.create(axios);
         }
         else {
-            this.axios = Axios.default.create();
+            this.axios = Axios.default.create(axios);
+        }
+        this.urllib = Urllib;
+        if (network && network.type === 'axios') {
+            this.network = new NetworkAxios(axios);
+        }
+        else {
+            this.network = new NetworkUrlLib(urllib);
         }
         if (cache) {
             const { type } = cache;
@@ -239,7 +299,7 @@ class Context {
         else {
             const profiler = this.logger.startTimer();
             try {
-                res = this.axios.get(url);
+                res = this.network.get(url);
             }
             catch (e) {
                 this.logger.error(util.format(`url:%s error: %s`, url, e.message), { tag: "axios" });
@@ -361,6 +421,7 @@ class Crawler {
             await ctx.init();
         }
         catch (e) {
+            ctx.logger.error(e.message);
             await ctx.release();
             return null;
         }
