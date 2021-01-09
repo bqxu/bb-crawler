@@ -429,7 +429,7 @@ class Context {
         } else {
             const profiler = this.logger.startTimer();
             try{
-                res = this.network.get(this.request_url(url))
+                res = await this.network.get(request_url)
             }catch(e){
                 this.logger.error(util.format(`url:%s error: %s`, request_url, e.message), {tag: "axios"})
                 throw e;
