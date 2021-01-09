@@ -236,6 +236,17 @@ class Context {
         profiler.done({ service: this.config.logger.service, tag: url, level: 'debug', message: 'request timer' });
         return res;
     }
+    async requestCache(ctx, url) {
+        const { requestCache } = ctx.config;
+        if (requestCache) {
+            return await this.requestCache(ctx, url);
+        }
+        let cacheUrl = await ctx.cache_url(url);
+        ;
+        return {
+            data: await ctx.cache.get(cacheUrl)
+        };
+    }
     async format(url) {
         const profiler = this.logger.startTimer();
         const { format } = this.config;
@@ -353,9 +364,7 @@ class Crawler {
                 this.logger.debug(util.format(`cacheUrl:%s `, cacheUrl), { tag: url });
                 if (await ctx.cache.hasCache(cacheUrl)) {
                     this.logger.debug(util.format(`hasCache`), { tag: url });
-                    ctx.res = {
-                        data: await ctx.cache.get(cacheUrl)
-                    };
+                    ctx.res = await ctx.requestCache(ctx, url);
                 }
                 else {
                     ctx.res = await ctx.request(url);
