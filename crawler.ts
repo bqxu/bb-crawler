@@ -588,7 +588,7 @@ export class Crawler {
     }
 
     async task(url) {
-        this.logger.info(util.format(`url:%s`, url), {tag: 'task'})
+        this.logger.info(util.format(`url:%j`, url), {tag: 'task'})
         let ctx = await this.newContext();
         if(!ctx){
             throw new Error(`can't newContext`)
