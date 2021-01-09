@@ -286,7 +286,7 @@ class Crawler {
     constructor(config) {
         if (typeof (config) === 'string') {
             config = {
-                urls: [config]
+                url: config
             };
         }
         // if (!config.urls && config.url) {
@@ -314,7 +314,14 @@ class Crawler {
         }
     }
     async urls() {
-        return this.config.urls || [this.config.url];
+        const { url, urls } = this.config;
+        if (url) {
+            return [url];
+        }
+        if (urls) {
+            return await urls();
+        }
+        return [];
     }
     async newContext() {
         const ctx = new Context(_.assign({}, this.config));

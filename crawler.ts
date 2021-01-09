@@ -383,7 +383,7 @@ export class Crawler {
     constructor(config: Config | string | any) {
         if (typeof(config) === 'string') {
             config = {
-                urls: [config]
+                url: config
             }
         }
         // if (!config.urls && config.url) {
@@ -421,7 +421,14 @@ export class Crawler {
     }
 
     async urls() {
-        return this.config.urls || [this.config.url];
+        const {url, urls} = this.config;
+        if(url){
+            return [url];
+        }
+        if(urls ){
+            return await urls()
+        }
+        return [];
     }
 
     async newContext() {
