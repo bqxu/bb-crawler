@@ -307,11 +307,25 @@ class Context {
         const {request} = this.config;
         let res = null;
         if (request) {
-            res = await request(this, url)
+             try{
+                res = await request(this, url)
+             }catch(e){
+                this.logger.error(util.format(`url:%s error: %s`, url, e.message), {tag: "request"})
+                throw e;
+            } 
         } else {
-            res = this.axios.get(url)
+            const profiler = this.logger.startTimer();
+            try{
+                res = this.axios.get(url)
+            }catch(e){
+                this.logger.error(util.format(`url:%s error: %s`, url, e.message), {tag: "axios"})
+                throw e;
+            } finally {
+                profiler.done({service: this.config.logger.service, tag: url, level: 'debug', message: 'request timer'});
+            }
+            
         }
-        profiler.done({service: this.config.logger.service, tag: url, level: 'debug', message: 'request timer'});
+        
         return res;
     }
 
