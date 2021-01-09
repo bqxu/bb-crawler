@@ -298,12 +298,13 @@ class Context {
         const profiler = this.logger.startTimer();
         const { request } = this.config;
         let res = null;
+        let request_url = await this.request_url(url);
         if (request) {
             try {
                 res = await request(this, url);
             }
             catch (e) {
-                this.logger.error(util.format(`url:%s error: %s`, url, e.message), { tag: "request" });
+                this.logger.error(util.format(`url:%s error: %s`, request_url, e.message), { tag: "request" });
                 throw e;
             }
         }
@@ -313,11 +314,11 @@ class Context {
                 res = this.network.get(this.request_url(url));
             }
             catch (e) {
-                this.logger.error(util.format(`url:%s error: %s`, this.request_url(url), e.message), { tag: "axios" });
+                this.logger.error(util.format(`url:%s error: %s`, request_url, e.message), { tag: "axios" });
                 throw e;
             }
             finally {
-                profiler.done({ service: this.config.logger.service, tag: url, level: 'debug', message: 'request timer' });
+                profiler.done({ service: this.config.logger.service, tag: request_url, level: 'debug', message: 'request timer' });
             }
         }
         return res;
@@ -337,22 +338,24 @@ class Context {
         const profiler = this.logger.startTimer();
         const { format } = this.config;
         let res = null;
+        let request_url = await this.request_url(url);
         if (format) {
             res = await format(this, url);
         }
         else {
             res = this.res.data;
         }
-        profiler.done({ service: this.config.logger.service, tag: url, level: 'debug', message: 'format timer' });
+        profiler.done({ service: this.config.logger.service, tag: request_url, level: 'debug', message: 'format timer' });
         return res;
     }
     async store(url) {
         const profiler = this.logger.startTimer();
         const { store } = this.config;
+        let request_url = await this.request_url(url);
         if (store) {
             await store(this, url);
         }
-        profiler.done({ service: this.config.logger.service, tag: url, level: 'debug', message: 'store timer' });
+        profiler.done({ service: this.config.logger.service, tag: request_url, level: 'debug', message: 'store timer' });
     }
     async release() {
         const { release } = this.config;
@@ -446,16 +449,17 @@ class Crawler {
         }
         try {
             await ctx.beforeRequest(url);
+            let request_url = await ctx.request_url(url);
             if (ctx.done) {
-                this.logger.info(util.format(`url:%s `, url), { tag: "done" });
+                this.logger.info(util.format(`url:%s `, request_url), { tag: "done" });
                 await ctx.release();
                 return;
             }
             if (ctx.cache) {
                 let cacheUrl = await ctx.cache_url(url);
-                this.logger.debug(util.format(`cacheUrl:%s `, cacheUrl), { tag: url });
+                this.logger.debug(util.format(`cacheUrl:%s `, cacheUrl), { tag: request_url });
                 if (await ctx.cache.hasCache(cacheUrl)) {
-                    this.logger.debug(util.format(`hasCache`), { tag: url });
+                    this.logger.debug(util.format(`hasCache`), { tag: request_url });
                     ctx.res = await ctx.requestCache(ctx, url);
                 }
                 else {
