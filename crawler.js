@@ -374,6 +374,10 @@ class Crawler {
         }
         try {
             await ctx.beforeRequest(url);
+            if (ctx.done) {
+                await ctx.release();
+                return;
+            }
             if (ctx.cache) {
                 let cacheUrl = await ctx.cache_url(url);
                 this.logger.debug(util.format(`cacheUrl:%s `, cacheUrl), { tag: url });
