@@ -181,6 +181,12 @@ class NetworkUrlLib {
     constructor(config = {}) {
         const config_ = this.config = Object.assign({}, config);
         this.make_proxy(this.config);
+        if (this.config.maxConnect) {
+            this.maxConnect = 5;
+        }
+        else {
+            this.maxConnect = 1;
+        }
     }
     make_proxy(config) {
         if (config && config.proxy) {
@@ -208,6 +214,28 @@ class NetworkUrlLib {
     postJSON_rText(url, data, config) {
         this.make_proxy(config);
         return Urllib.request(url, Object.assign({ method: 'POST', data, dataType: 'text' }, this.config, config));
+    }
+}
+class Task {
+    constructor(handler, args) {
+        this.handler = handler;
+        this.args = args;
+    }
+    exec() {
+    }
+}
+class ThreadPool {
+    constructor(config) {
+        Object.assign(this, config);
+        if (!this.maxConnect) {
+            this.maxConnect = 1;
+        }
+        if (!this.timeout) {
+            this.timeout = 100000;
+        }
+    }
+    run(handler, args) {
+        let task = new Task(handler, args);
     }
 }
 class Context {
@@ -476,7 +504,7 @@ class Crawler {
             await ctx.release();
         }
         catch (e) {
-            this.logger.error(util.format(`url:%s error: %s`, url, e.message), { tag: "task" });
+            this.logger.error(util.format(`url:%o error: %s`, url, e.message), { tag: "task" });
             await ctx.release();
         }
     }

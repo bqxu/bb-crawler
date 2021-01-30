@@ -261,10 +261,16 @@ class NetworkUrlLib implements Network {
 
     
     config: any;
+    maxConnect: number;
 
     constructor(config = {}) {
        const config_:any =  this.config = Object.assign({},config);    
-        this.make_proxy(this.config)
+        this.make_proxy(this.config)    
+        if(this.config.maxConnect){
+            this.maxConnect = 5;
+        }else{
+            this.maxConnect = 1;
+        }    
     }
 
     make_proxy(config?:any){
@@ -300,6 +306,44 @@ class NetworkUrlLib implements Network {
     }
 }
 
+class Task{
+    handler: Function;
+    args?:any;
+
+    constructor(handler,args){
+        this.handler = handler;
+        this.args = args;
+    }
+
+    exec(){
+
+    }
+}
+
+class ThreadPool {
+    
+    maxConnect: number;
+    timeout: number;
+
+    tasks: [];
+
+    constructor(config){
+        Object.assign(this,config); 
+        if(!this.maxConnect){
+            this.maxConnect = 1
+        }   
+        
+        if(!this.timeout){
+            this.timeout = 100000;
+        }
+    }
+    
+    run(handler,args){
+
+        let task = new Task(handler,args);
+        
+    }
+}
 
 
 class Context {
@@ -621,7 +665,7 @@ export class Crawler {
             await ctx.store(url);
             await ctx.release();
         } catch(e) {
-            this.logger.error(util.format(`url:%s error: %s`, url, e.message), {tag: "task"})
+            this.logger.error(util.format(`url:%o error: %s`, url, e.message), {tag: "task"})
             await ctx.release();
         }
         
