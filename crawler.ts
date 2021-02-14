@@ -85,6 +85,9 @@ export class CacheOSS implements Cache {
     }
 
     async set(key, value) {
+        if(!value){
+            return
+        }
         await this.oss.put(`${this.prefix}${key}`, Buffer.from(value, this.encoding));
     }
 }
@@ -145,6 +148,9 @@ export class CacheCos implements Cache {
     }
 
     async set(key, value) {
+        if(!value){
+            return
+        }
         return new Promise((resolve, reject) => {
             this.cos.putObject({
                 Bucket: this.Bucket, // Bucket 格式：test-1250000000

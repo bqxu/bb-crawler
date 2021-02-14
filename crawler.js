@@ -49,6 +49,9 @@ class CacheOSS {
         return result.content.toString(this.encoding);
     }
     async set(key, value) {
+        if (!value) {
+            return;
+        }
         await this.oss.put(`${this.prefix}${key}`, buffer_1.Buffer.from(value, this.encoding));
     }
 }
@@ -100,6 +103,9 @@ class CacheCos {
         });
     }
     async set(key, value) {
+        if (!value) {
+            return;
+        }
         return new Promise((resolve, reject) => {
             this.cos.putObject({
                 Bucket: this.Bucket,
